@@ -1,0 +1,138 @@
+- Edit docker file Dockerfile file
+
+'''
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY . /app
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "main.py"]
+
+'''
+
+- Build the Docker Image:
+
+docker build -t my-crawler .
+
+- Verify the Image was Built
+
+docker images
+
+- Run the Docker Container
+
+docker run --rm my-crawler
+
+- (Optional) Troubleshooting
+
+View logs/output: 
+docker logs <container_id>
+
+To get the container ID
+docker ps
+
+- Run interactively for debugging:
+  
+docker run -it --rm my-crawler /bin/bash
+ 
+sudo docker run  --rm my-python-app  ls -l /app
+
+
+🛠 3. Kiểm tra logs của container
+
+Nếu script chạy ngầm mà không thấy output, bạn có thể kiểm tra log:
+
+sudo docker logs $(sudo docker ps -alq)
+
+4. Kiểm tra nếu output được ghi vào file
+
+Nếu script đang ghi dữ liệu vào output.html, thử kiểm tra file đó:
+
+sudo docker run --rm -v $(pwd):/app my-crawler
+ls -l output.html
+cat output.html
+
+Container chạy xong là tắt thì mặc định sẽ không hiển thị trong docker ps, nhưng bạn vẫn có thể list ra container đã chạy trước đó bằng:
+
+sudo docker ps -a
+
+
+📌 Nếu muốn kiểm tra logs của container đã chạy xong
+
+Bạn có thể dùng:
+
+sudo docker logs $(sudo docker ps -alq)
+
+
+Nếu muốn giữ container sau khi chạy xong
+
+Mặc định, bạn đang chạy với --rm, tức là container chạy xong sẽ bị xóa luôn.
+Nếu muốn nó không bị xóa, chạy thế này:
+
+sudo docker run -it my-crawler
+
+Hoặc nếu vẫn muốn chạy ngầm:
+
+sudo docker run -d --name my-crawler-instance my-crawler
+
+Sau đó có thể kiểm tra logs:
+
+sudo docker logs my-crawler-instance
+
+🔥 Thử ngay xem có thấy log không nhé! 🚀
+
+
+
+#############################
+Không phải Dockerfile của bạn sai, mà có thể bạn đang gặp vấn đề khi chạy Python ngoài container. Mình sẽ phân tích:
+📌 Vấn đề bạn gặp phải
+
+    Khi bạn chạy python main.py trên máy tính (huynet@huynet-vnx), nó báo lỗi:
+
+    Command 'python' not found, did you mean:
+    command 'python3' from deb python3
+    command 'python' from deb python-is-python3
+
+    → Điều này có nghĩa là hệ thống của bạn không có lệnh python, mà chỉ có python3.
+
+    Khi bạn chạy python3 main.py, không có lỗi nào, nghĩa là mã Python của bạn chạy ổn bên ngoài container.
+
+🐳 Phân tích Dockerfile của bạn
+
+Docker của bạn đang sử dụng python:3.12-slim, trong đó Python đã được cài đặt đầy đủ và có lệnh python.
+Vì vậy, khi container chạy, lệnh CMD ["python", "main.py"] sẽ hoạt động bình thường trong container.
+🛠 Cách kiểm tra container của bạn
+
+Bạn có thể làm theo các bước sau để chắc chắn Dockerfile hoạt động đúng:
+1️⃣ Xây dựng lại image
+
+Chạy lệnh sau để build lại Docker image:
+
+docker build -t my-python-app .
+
+(Lệnh này sẽ tạo một image có tên my-python-app.)
+2️⃣ Kiểm tra xem lệnh python có trong container không
+
+Chạy container ở chế độ tương tác:
+
+docker run -it --rm my-python-app sh
+
+Sau đó, trong terminal của container, thử chạy:
+
+python --version
+python3 --version
+
+Nếu Python cài đúng, bạn sẽ thấy phiên bản 3.12.
+3️⃣ Chạy thử container
+
+Nếu container hoạt động đúng, bạn có thể chạy ứng dụng bằng:
+
+docker run --rm my-python-app
+
+🎯 Tóm lại
+
+    Lỗi của bạn là do môi trường bên ngoài Docker không có python, chỉ có python3.
+    Dockerfile của bạn đúng, và bên trong container, lệnh python vẫn chạy bình thường.
+    Để kiểm tra, hãy vào container và thử python --version.
